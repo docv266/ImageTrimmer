@@ -84,10 +84,13 @@ public class Lanceur
 			writer.write(docRoot.select("td:contains(Kilométrage) + td").text().trim());
 			writer.newLine();
 
+			writer.write(docRoot.select("td:contains(Prix) + td").text().replace(" ", "").replace("€", ""));
+			writer.newLine();
+
 			writer.write(docRoot.select(".user_link").text().trim());
 			writer.newLine();
 
-			writer.write(docRoot.select(".vs-phone-button").attr("data-phone-number").trim());
+			writer.write(docRoot.select(".vs-phone-button").attr("data-phone-number").replace(" ", "").trim());
 			writer.newLine();
 
 			writer.write(docRoot.select("td:contains(Ville/Code postal) + td").text().trim());
@@ -122,6 +125,8 @@ public class Lanceur
 				ImageIO.write(img, "jpg", outputfile);
 
 			}
+
+			System.out.println("Ok!");
 
 		}
 		catch (
