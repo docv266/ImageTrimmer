@@ -50,14 +50,10 @@ public class Lanceur
 			File dossierGeneral = new File("sortie");
 
 			// Créer le dossier s'il n'existe pas
-			if (dossierGeneral.exists())
+			if (!dossierGeneral.exists())
 			{
-
-				FileUtils.deleteDirectory(dossierGeneral);
-
+				dossierGeneral.mkdirs();
 			}
-
-			dossierGeneral.mkdirs();
 
 			// http://annonce-moto.vivastreet.com/moto+gradignan-33170/600-bandit/124901707
 			File dossierAnnonce = new File(dossierGeneral + File.separator + args[0].split("/")[5]);
