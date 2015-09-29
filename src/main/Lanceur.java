@@ -1,21 +1,22 @@
 package main;
 
 import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
-import java.awt.image.WritableRaster;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
 import org.apache.commons.io.FileUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 public class Lanceur
 {
-
-	// File representing the folder that you select using a FileChooser
-	static final File dir = new File(".");
 
 	// array of supported extensions (use a List if you prefer)
 	static final String[] EXTENSIONS = new String[]
@@ -42,75 +43,100 @@ public class Lanceur
 
 	public static void main(String[] args)
 	{
-		File dossier = new File("sortie");
-
-		// Créer le dossier s'il n'existe pas
-		if (dossier.exists())
+		try
 		{
-			try
-			{
-				FileUtils.deleteDirectory(dossier);
-			}
-			catch (IOException e)
-			{
-				e.printStackTrace();
-			}
-		}
+			Document docRoot = Jsoup.connect(args[0]).get();
 
-		dossier.mkdirs();
+			File dossierGeneral = new File("sortie");
 
-		if (dir.isDirectory())
-		{ // make sure it's a directory
-			for (final File f : dir.listFiles(IMAGE_FILTER))
+			// Créer le dossier s'il n'existe pas
+			if (dossierGeneral.exists())
+			{
+
+				FileUtils.deleteDirectory(dossierGeneral);
+
+			}
+
+			dossierGeneral.mkdirs();
+
+			// http://annonce-moto.vivastreet.com/moto+gradignan-33170/600-bandit/124901707
+			File dossierAnnonce = new File(dossierGeneral + File.separator + args[0].split("/")[5]);
+
+			if (dossierAnnonce.exists())
+			{
+
+				FileUtils.deleteDirectory(dossierAnnonce);
+
+			}
+
+			dossierAnnonce.mkdirs();
+
+			File sortie = new File(
+					dossierGeneral + File.separator + dossierAnnonce.getName() + File.separator + "sortie.txt");
+
+			BufferedWriter writer = new BufferedWriter(new FileWriter(sortie));
+
+			writer.write(docRoot.select("h1").text().trim());
+			writer.newLine();
+
+			writer.write(docRoot.select(".shortdescription").text().trim());
+			writer.newLine();
+
+			writer.write(docRoot.select("td:contains(Année) + td").text().trim());
+			writer.newLine();
+
+			writer.write(docRoot.select("td:contains(Kilométrage) + td").text().trim());
+			writer.newLine();
+
+			writer.write(docRoot.select(".user_link").text().trim());
+			writer.newLine();
+
+			writer.write(docRoot.select(".vs-phone-button").attr("data-phone-number").trim());
+			writer.newLine();
+
+			writer.write(docRoot.select("td:contains(Ville/Code postal) + td").text().trim());
+			writer.close();
+
+			// Photos
+
+			TraitementImage.saveImage(docRoot.select("#vs_photos_0 > img").attr("src").trim(),
+					dossierGeneral + File.separator + dossierAnnonce.getName() + File.separator + "_1.jpg");
+
+			Elements ele = docRoot.select("[id^=vs_photos_] > span");
+
+			int i = 2;
+			for (Element photo : ele)
+			{
+				TraitementImage.saveImage(photo.attr("src").trim(),
+						dossierGeneral + File.separator + dossierAnnonce.getName() + File.separator + "_" + i + ".jpg");
+				i++;
+			}
+
+			for (final File f : dossierAnnonce.listFiles(IMAGE_FILTER))
 			{
 				BufferedImage img = null;
 
-				try
-				{
-					img = ImageIO.read(f);
+				img = ImageIO.read(f);
 
-					img = trim(img);
-					img = cropImage(img);
+				img = TraitementImage.trim(img, 0.2);
 
-					File outputfile = new File(dossier + "/" + f.getName());
-					ImageIO.write(img, "jpg", outputfile);
-				}
-				catch (final IOException e)
-				{
-					// handle errors here
-				}
+				img = TraitementImage.cropImage(img);
+
+				File outputfile = new File(dossierAnnonce + "/" + f.getName());
+				ImageIO.write(img, "jpg", outputfile);
+
 			}
+
 		}
+		catch (
 
-	}
+		IOException e1)
 
-	static private BufferedImage cropImage(BufferedImage src)
-	{
-		BufferedImage dest = src.getSubimage(0, 0, src.getWidth(), src.getHeight() - 60);
-		return dest;
-	}
-
-	static BufferedImage trim(BufferedImage image)
-	{
-		int x1 = Integer.MAX_VALUE, y1 = Integer.MAX_VALUE, x2 = 0, y2 = 0;
-		for (int x = 0; x < image.getWidth(); x++)
 		{
-			for (int y = 0; y < image.getHeight(); y++)
-			{
-				int argb = image.getRGB(x, y);
-				if (argb != -1)
-				{
-					x1 = Math.min(x1, x);
-					y1 = Math.min(y1, y);
-					x2 = Math.max(x2, x);
-					y2 = Math.max(y2, y);
-				}
-			}
+			e1.printStackTrace();
+			System.exit(0);
 		}
-		WritableRaster r = image.getRaster();
-		ColorModel cm = image.getColorModel();
-		r = r.createWritableChild(x1, y1, x2 - x1, y2 - y1, 0, 0, null);
-		return new BufferedImage(cm, r, cm.isAlphaPremultiplied(), null);
+
 	}
 
 }
